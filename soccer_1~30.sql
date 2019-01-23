@@ -268,21 +268,110 @@ SELECT T.E_TEAM_NAME
 -- 평균키가 인천 유나이티스팀의 평균키 보다 작은 팀의 
 -- 팀ID, 팀명, 평균키 추출
 
-
-
+SELECT P.TEAM_ID 팀ID, 
+    T.TEAM_NAME 팀명, 
+    ROUND(AVG(P.HEIGHT),2) 평균키
+FROM TEAM T
+    JOIN PLAYER P
+        ON T.TEAM_ID LIKE P.TEAM_ID
+GROUP BY P.TEAM_ID, T.TEAM_NAME
+HAVING AVG(P.HEIGHT) < (SELECT AVG(P.HEIGHT)
+                        FROM TEAM T
+                            JOIN PLAYER P
+                                ON T.TEAM_ID LIKE P.TEAM_ID
+                        WHERE T.TEAM_NAME LIKE '유나이티드')
+ORDER BY 평균키;
 
 -- SOCCER_SQL_017
 -- 포지션이 MF 인 선수들의  소속팀명 및 선수명, 백넘버 출력
 
-
+SELECT (SELECT TEAM_NAME FROM TEAM WHERE TEAM_ID LIKE P.TEAM_ID) 팀명,
+       PLAYER_NAME 선수명,
+       BACK_NO 백넘버
+FROM (SELECT PLAYER_NAME,BACK_NO,TEAM_ID,POSITION FROM PLAYER) P
+WHERE POSITION LIKE 'MF'
+ORDER BY PLAYER_NAME;
 
 
 -- SOCCER_SQL_018
 -- 가장 키큰 선수 5 추출, 오라클, 단 키 값이 없으면 제외
 
-
+SELECT P.PLAYER_NAME 선수명,
+       P.BACK_NO 백넘버,
+       P.POSITION 포지션,
+       P.HEIGHT 키
+FROM (SELECT PLAYER_NAME,
+             BACK_NO,
+             POSITION,
+             HEIGHT 
+      FROM PLAYER 
+      WHERE HEIGHT IS NOT NULL
+      ORDER BY HEIGHT DESC)P
+WHERE ROWNUM BETWEEN 1 AND 5;
 
 
 -- SOCCER_SQL_019
 -- 선수 자신이 속한 팀의 평균키보다 작은 선수 정보 출력
 
+
+SELECT  TEAM_NAME,
+        PLAYER_NAME, 
+        POSITION, 
+        BACK_NO,
+        HEIGHT
+FROM PLAYER P
+    JOIN TEAM T
+        ON P.TEAM_ID LIKE T.TEAM_ID
+WHERE P.HEIGHT < (SELECT ROUND(AVG(HEIGHT),2) FROM PLAYER P2 WHERE P2.TEAM_ID LIKE P.TEAM_ID)
+ORDER BY P.PLAYER_NAME;
+
+
+-- SOCCER_SQL_020
+-- 2012년 5월 한달간 경기가 있는 경기장 조회
+-- EXISTS 쿼리는 항상 연관쿼리로 상요한다.
+-- 또한 아무리 조건을 만족하는 건이 여러 건이라도
+-- 조건을 만족하는 1건만 찾으면 추가적인 검색을 진행하지 않는다.
+
+SELECT STADIUM_ID ID,
+       STADIUM_NAME 경기장명
+FROM STADIUM S
+WHERE EXISTS (SELECT 1
+              FROM SCHEDULE C 
+              WHERE C.STADIUM_ID = S.STADIUM_ID AND SCHE_DATE BETWEEN '20120501' AND '20120531');
+
+
+-- SOCCER_SQL_021
+-- 이현 선수 소속팀의 선수명단 출력
+
+SELECT PLAYER_NAME 선수명,
+       POSITION 포지션,
+       BACK_NO 백넘버
+FROM PLAYER P
+WHERE TEAM_ID LIKE(SELECT TEAM_ID 
+                   FROM PLAYER 
+                   WHERE PLAYER_NAME LIKE '이현' )
+ORDER BY PLAYER_NAME;
+
+
+-- SOCCER_SQL_022
+-- NULL 처리에 있어
+-- SUM(NVL(SAL,0)) 로 하지말고
+-- NVL(SUM(SAL),0) 으로 해야 자원낭비가 줄어든다
+ 
+-- 팀별 포지션별 인원수와 팀별 전체 인원수 출력
+ 
+-- Oracle, Simple Case Expr 
+
+
+ SELECT TEAM_ID,
+              NVL(SUM(CASE WHEN POSITION = 'FW' THEN 1 END), 0) FW,
+              NVL(SUM(CASE WHEN POSITION = 'MF' THEN 1 END), 0) MF,
+              NVL(SUM(CASE WHEN POSITION = 'DF' THEN 1 END), 0) DF,
+              NVL(SUM(CASE WHEN POSITION = 'GK' THEN 1 END), 0) GK,
+              COUNT(*) SUM
+ FROM PLAYER P
+ GROUP BY TEAM_ID;
+ 
+ 
+ -- SOCCER_SQL_023
+-- GROUP BY 절 없이 전체 선수들의 포지션별 평균 키 및 전체 평균 키 출력
