@@ -372,6 +372,32 @@ ORDER BY PLAYER_NAME;
  FROM PLAYER P
  GROUP BY TEAM_ID;
  
+DESC TEAM;
  
  -- SOCCER_SQL_023
 -- GROUP BY 절 없이 전체 선수들의 포지션별 평균 키 및 전체 평균 키 출력
+
+SELECT ROUND(AVG(CASE WHEN POSITION = 'MF' THEN HEIGHT END),2) 미드필더,
+       ROUND(AVG(CASE WHEN POSITION = 'FW' THEN HEIGHT END),2) 포워드,
+       ROUND(AVG(CASE WHEN POSITION = 'DF' THEN HEIGHT END),2) 디펜더,
+       ROUND(AVG(CASE WHEN POSITION = 'GK' THEN HEIGHT END),2) 골키퍼,
+       ROUND(AVG(HEIGHT),2)평균키
+FROM PLAYER;
+
+-- SOCCER_SQL_024 
+-- 소속팀별 키가 가장 작은 사람들의 정보
+
+SELECT P.TEAM_ID,
+       TEAM_NAME,
+       PLAYER_NAME,
+       POSITION,
+       BACK_NO,
+       HEIGHT
+FROM PLAYER P
+    JOIN TEAM T
+        ON P.TEAM_ID LIKE T.TEAM_ID
+ORDER BY HEIGHT;
+        
+        
+        
+        
